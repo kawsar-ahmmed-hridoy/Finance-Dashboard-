@@ -11,7 +11,7 @@ export const typeOrmConfig = (
   host: configService.get<string>('DB_HOST', 'localhost'),
   port: configService.get<number>('DB_PORT', 5432),
   username: configService.get<string>('DB_USERNAME', 'postgres'),
-  password: configService.get<string>('DB_PASSWORD', 'postgres'),
+  password: configService.get<string>('DB_PASSWORD', '1234'),
   database: configService.get<string>('DB_NAME', 'finance_db'),
   entities: [User, RefreshToken, Transaction],
   synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',

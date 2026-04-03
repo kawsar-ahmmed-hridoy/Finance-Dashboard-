@@ -3,7 +3,7 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -135,12 +135,14 @@ export class AuthService {
       '7d',
     );
 
-    const jwtSecret = this.configService.get<string>('JWT_SECRET') || 'default-secret';
+    const jwtSecret =
+      this.configService.get<string>('JWT_SECRET') || 'default-secret';
+    const signOptions: JwtSignOptions = {
+      secret: jwtSecret,
+      expiresIn: this.parseSeconds(jwtExpiresIn),
+    };
     const [accessToken, rawRefreshToken] = await Promise.all([
-      this.jwtService.signAsync({ ...payload } as any, {
-        secret: jwtSecret,
-        expiresIn: jwtExpiresIn,
-      } as any),
+      this.jwtService.signAsync(payload, signOptions),
       Promise.resolve(uuidv4()),
     ]);
 

@@ -15,7 +15,8 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
+  // ✅ FIXED
+  @Column({ type: 'text', unique: true })
   token: string;
 
   @Column({ type: 'uuid' })
@@ -28,13 +29,13 @@ export class RefreshToken {
   @Column({ type: 'timestamptz' })
   expiresAt: Date;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   isRevoked: boolean;
 
-  @Column({ nullable: true, length: 45 })
+  @Column({ type: 'varchar', length: 45, nullable: true })
   ipAddress: string | null;
 
-  @Column({ nullable: true, length: 500 })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   userAgent: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })

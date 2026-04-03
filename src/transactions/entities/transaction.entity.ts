@@ -45,13 +45,13 @@ export class Transaction {
   @Column({ type: 'date' })
   transactionDate: string;
 
-  @Column({ nullable: true, length: 500 })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   description: string | null;
 
-  @Column({ nullable: true, length: 100 })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   reference: string | null;
 
-  @Column({ nullable: true, length: 3, default: 'USD' })
+  @Column({ type: 'varchar', length: 3, default: 'USD' })
   currency: string;
 
   @Column({ type: 'jsonb', nullable: true })
