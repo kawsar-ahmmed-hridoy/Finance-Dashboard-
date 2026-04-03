@@ -1,4 +1,4 @@
-# 💰 Finance Dashboard Backend API
+# Finance Dashboard Backend API
 
 A production-grade, secure, and scalable backend for a Finance Dashboard system built with **NestJS** and **PostgreSQL**.
 
@@ -402,9 +402,9 @@ Creates the following accounts and 6 months of sample transactions:
 
 | Role    | Email                  | Password       |
 |---------|------------------------|----------------|
-| Admin   | admin@finance.com      | Admin@12345    |
-| Analyst | analyst@finance.com    | Analyst@12345  |
-| Viewer  | viewer@finance.com     | Viewer@12345   |
+| Admin   | admin@finance.com      | Admin@1234     |
+| Analyst | analyst@finance.com    | Analyst@1234   |
+| Viewer  | viewer@finance.com     | Viewer@1234    |
 
 ---
 
