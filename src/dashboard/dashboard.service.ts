@@ -371,8 +371,6 @@ export class DashboardService {
     );
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
-
   private buildBaseQuery(user: User) {
     const qb = this.transactionRepo.createQueryBuilder('t');
     if (user.role !== Role.ADMIN) {

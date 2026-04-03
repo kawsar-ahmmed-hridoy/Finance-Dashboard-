@@ -21,19 +21,19 @@ export class LoginDto {
 }
 
 export class RegisterDto {
-  @ApiProperty({ example: 'Jane' })
+  @ApiProperty({ example: 'Kawsar Ahmmed' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   firstName: string;
 
-  @ApiProperty({ example: 'Smith' })
+  @ApiProperty({ example: 'Hridoy' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   lastName: string;
 
-  @ApiProperty({ example: 'jane.smith@example.com' })
+  @ApiProperty({ example: 'kawsar.ahmmed.hridoy@gmail.com' })
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(255)

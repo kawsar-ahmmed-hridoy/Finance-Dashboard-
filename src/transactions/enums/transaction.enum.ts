@@ -5,7 +5,7 @@ export enum TransactionType {
 }
 
 export enum TransactionCategory {
-  // Income categories
+  // Income
   SALARY = 'salary',
   FREELANCE = 'freelance',
   INVESTMENT = 'investment',
@@ -13,7 +13,7 @@ export enum TransactionCategory {
   DIVIDEND = 'dividend',
   OTHER_INCOME = 'other_income',
 
-  // Expense categories
+  // Expense
   HOUSING = 'housing',
   FOOD = 'food',
   TRANSPORT = 'transport',

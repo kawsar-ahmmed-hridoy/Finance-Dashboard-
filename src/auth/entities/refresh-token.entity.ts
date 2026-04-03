@@ -15,7 +15,6 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // ✅ FIXED
   @Column({ type: 'text', unique: true })
   token: string;
 

@@ -43,14 +43,12 @@ export class TransactionsService {
         'createdBy.email',
       ]);
 
-    // Non-admins only see their own records
     if (user.role !== Role.ADMIN) {
       qb.where('t.createdById = :userId', { userId: user.id });
     } else if (query.createdById) {
       qb.where('t.createdById = :userId', { userId: query.createdById });
     }
 
-    // Filters
     if (query.type) qb.andWhere('t.type = :type', { type: query.type });
     if (query.category)
       qb.andWhere('t.category = :category', { category: query.category });
@@ -77,7 +75,6 @@ export class TransactionsService {
       );
     }
 
-    // Sorting & Pagination
     const allowedSortFields: Record<string, string> = {
       amount: 't.amount',
       transactionDate: 't.transactionDate',
@@ -144,8 +141,6 @@ export class TransactionsService {
     await this.transactionRepo.softDelete(transactions.map((t) => t.id));
     return { deleted: transactions.length };
   }
-
-  // ─── Access control helpers ───────────────────────────────────────────────
 
   private assertCanAccess(transaction: Transaction, user: User): void {
     if (user.role === Role.ADMIN) return;

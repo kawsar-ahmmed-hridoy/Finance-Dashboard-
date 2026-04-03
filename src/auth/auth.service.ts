@@ -71,14 +71,12 @@ export class AuthService {
     });
 
     if (!storedToken || !storedToken.isValid) {
-      // Potential token reuse — revoke all tokens for safety
       if (storedToken?.userId) {
         await this.revokeAllUserTokens(storedToken.userId);
       }
       throw new UnauthorizedException('Refresh token is invalid or expired');
     }
 
-    // Rotate: revoke used token
     await this.refreshTokenRepo.update(storedToken.id, { isRevoked: true });
 
     return this.generateTokenPair(storedToken.user, meta);
@@ -113,8 +111,6 @@ export class AuthService {
     // Invalidate all sessions after password change
     await this.revokeAllUserTokens(userId);
   }
-
-  // ─── Private helpers ──────────────────────────────────────────────────────
 
   private async generateTokenPair(
     user: User,
@@ -159,7 +155,6 @@ export class AuthService {
       }),
     );
 
-    // Clean up expired tokens for this user (async, non-blocking)
     this.cleanupExpiredTokens(user.id).catch(() => {});
 
     const expiresInSeconds = this.parseSeconds(jwtExpiresIn);
@@ -187,7 +182,6 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User): Omit<User, 'password' | 'refreshTokens'> {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, refreshTokens, ...safe } = user as User & {
       password: string;
       refreshTokens: RefreshToken[];
@@ -204,6 +198,6 @@ export class AuthService {
     if (duration.endsWith('m')) return parseInt(duration) * 60;
     if (duration.endsWith('h')) return parseInt(duration) * 3600;
     if (duration.endsWith('d')) return parseInt(duration) * 86400;
-    return 900; // 15 minutes default
+    return 900;
   }
 }

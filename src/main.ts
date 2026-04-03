@@ -22,11 +22,9 @@ async function bootstrap() {
     .split(',')
     .map((o) => o.trim());
 
-  // Security
   app.use(helmet());
   app.use(compression());
 
-  // CORS
   app.enableCors({
     origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -34,13 +32,10 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // API Versioning
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
-  // Global prefix
   app.setGlobalPrefix('api');
 
-  // Global pipes
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,14 +45,12 @@ async function bootstrap() {
     }),
   );
 
-  // Global filters & interceptors
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(
     new LoggingInterceptor(),
     new ResponseInterceptor(),
   );
 
-  // Swagger Documentation
   if (configService.get<string>('NODE_ENV') !== 'production') {
     const swaggerConfig = new DocumentBuilder()
       .setTitle(appName)

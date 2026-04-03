@@ -12,19 +12,19 @@ import {
 import { Role } from '../../common/enums/role.enum';
 
 export class CreateUserDto {
-  @ApiProperty({ example: 'John' })
+  @ApiProperty({ example: 'Kawsar Ahmmmed' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   firstName: string;
 
-  @ApiProperty({ example: 'Doe' })
+  @ApiProperty({ example: 'Hridoy' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
   lastName: string;
 
-  @ApiProperty({ example: 'john.doe@example.com' })
+  @ApiProperty({ example: 'kawsar.ahmmed.hridoy@gmail.com' })
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(255)

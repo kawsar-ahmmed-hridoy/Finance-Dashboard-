@@ -21,7 +21,7 @@ export const typeOrmConfig = (
       ? { rejectUnauthorized: false }
       : false,
   extra: {
-    max: 20, // connection pool size
+    max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   },

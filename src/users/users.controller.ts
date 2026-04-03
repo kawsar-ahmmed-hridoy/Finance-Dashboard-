@@ -73,7 +73,6 @@ export class UsersController {
   @Patch('me')
   @ApiOperation({ summary: 'Update own profile (name only)' })
   updateMe(@CurrentUser() user: User, @Body() dto: UpdateUserDto) {
-    // Non-admins can only update their own name
     const { firstName, lastName } = dto;
     return this.usersService.update(user.id, { firstName, lastName });
   }

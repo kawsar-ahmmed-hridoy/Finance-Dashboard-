@@ -16,38 +16,32 @@ import { throttlerConfig } from './config/throttler.config';
 
 @Module({
   imports: [
-    // Configuration
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env'],
     }),
 
-    // Database
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: typeOrmConfig,
     }),
 
-    // Rate limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: throttlerConfig,
     }),
 
-    // Feature modules
     AuthModule,
     UsersModule,
     TransactionsModule,
     DashboardModule,
   ],
+  // Applied global guards
   providers: [
-    // Apply JWT auth globally
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    // Apply roles guard globally
     { provide: APP_GUARD, useClass: RolesGuard },
-    // Apply rate limiting globally
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
   controllers: [HealthController],

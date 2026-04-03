@@ -20,7 +20,6 @@ import { UsersModule } from '../users/users.module';
         const expiresIn = config.get<string>('JWT_EXPIRES_IN', '15m');
         return {
           secret: config.get<string>('JWT_SECRET') || '',
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           signOptions: { expiresIn: expiresIn as any },
         };
       },
