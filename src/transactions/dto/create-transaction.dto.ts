@@ -2,6 +2,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsEnum,
+  IsISO4217CurrencyCode,
   IsNumber,
   IsOptional,
   IsPositive,
@@ -62,7 +63,6 @@ export class CreateTransactionDto {
 
   @ApiPropertyOptional({ example: 'USD', default: 'USD' })
   @IsOptional()
-  @IsString()
-  @MaxLength(3)
+  @IsISO4217CurrencyCode()
   currency?: string;
 }

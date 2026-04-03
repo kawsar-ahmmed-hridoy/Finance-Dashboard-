@@ -18,8 +18,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
-    const jwtSecret =
-      configService.get<string>('JWT_SECRET') || 'default-secret';
+    const jwtSecret = configService.get<string>('JWT_SECRET');
+    if (!jwtSecret || jwtSecret.trim().length === 0) {
+      throw new Error('Missing required configuration: JWT_SECRET');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,

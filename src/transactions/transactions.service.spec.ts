@@ -10,6 +10,8 @@ import {
   TransactionStatus,
   TransactionType,
 } from './enums/transaction.enum';
+import { AuditService } from '../audit/audit.service';
+import { QueryTransactionsDto } from './dto/query-transactions.dto';
 
 const adminUser: Partial<User> = { id: 'admin-id', role: Role.ADMIN };
 const analystUser: Partial<User> = { id: 'analyst-id', role: Role.ANALYST };
@@ -33,6 +35,7 @@ const mockQb = {
   andWhere: jest.fn().mockReturnThis(),
   groupBy: jest.fn().mockReturnThis(),
   orderBy: jest.fn().mockReturnThis(),
+  addOrderBy: jest.fn().mockReturnThis(),
   skip: jest.fn().mockReturnThis(),
   take: jest.fn().mockReturnThis(),
   getManyAndCount: jest.fn().mockResolvedValue([[mockTx], 1]),
@@ -47,6 +50,10 @@ const mockRepo = {
   createQueryBuilder: jest.fn().mockReturnValue(mockQb),
 };
 
+const mockAuditService = {
+  log: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('TransactionsService', () => {
   let service: TransactionsService;
 
@@ -55,6 +62,7 @@ describe('TransactionsService', () => {
       providers: [
         TransactionsService,
         { provide: getRepositoryToken(Transaction), useValue: mockRepo },
+        { provide: AuditService, useValue: mockAuditService },
       ],
     }).compile();
 
@@ -62,6 +70,7 @@ describe('TransactionsService', () => {
     jest.clearAllMocks();
     mockRepo.createQueryBuilder.mockReturnValue(mockQb);
     mockQb.getManyAndCount.mockResolvedValue([[mockTx], 1]);
+    mockAuditService.log.mockResolvedValue(undefined);
   });
 
   it('should be defined', () => {
@@ -80,6 +89,29 @@ describe('TransactionsService', () => {
       const result = await service.create(dto, analystUser as User);
       expect(mockRepo.create).toHaveBeenCalled();
       expect(result).toEqual(mockTx);
+      expect(mockAuditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'transaction.created' }),
+      );
+    });
+  });
+
+  describe('exportCsv', () => {
+    it('exports csv rows and logs export action', async () => {
+      mockQb.getMany = jest.fn().mockResolvedValue([mockTx]);
+
+      const query: QueryTransactionsDto = {
+        page: 1,
+        limit: 10,
+        skip: 0,
+      };
+
+      const csv = await service.exportCsv(query, adminUser as User);
+
+      expect(csv).toContain('id,amount,currency,type,category,status');
+      expect(csv).toContain('"tx-uuid-1"');
+      expect(mockAuditService.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'transaction.exported_csv' }),
+      );
     });
   });
 

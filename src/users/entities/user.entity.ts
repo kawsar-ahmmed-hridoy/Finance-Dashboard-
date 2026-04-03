@@ -31,7 +31,7 @@ export class User {
   @Column({ unique: true, length: 255 })
   email: string;
 
-  @Column()
+  @Column({ select: false })
   @Exclude()
   password: string;
 

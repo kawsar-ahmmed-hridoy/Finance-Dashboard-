@@ -22,11 +22,13 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const { user } = context.switchToHttp().getRequest();
     if (!user) {
       throw new ForbiddenException('Access denied');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const userRoleLevel = ROLE_HIERARCHY[user.role as Role] ?? 0;
     const hasRole = requiredRoles.some(
       (role) => userRoleLevel >= ROLE_HIERARCHY[role],

@@ -8,6 +8,7 @@ import { HealthController } from './health.controller';
 import { UsersModule } from './users/users.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AuditModule } from './audit/audit.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
@@ -37,6 +38,7 @@ import { throttlerConfig } from './config/throttler.config';
     UsersModule,
     TransactionsModule,
     DashboardModule,
+    AuditModule,
   ],
   // Applied global guards
   providers: [

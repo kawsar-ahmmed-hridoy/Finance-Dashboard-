@@ -3,6 +3,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { User } from '../users/entities/user.entity';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
 import { Transaction } from '../transactions/entities/transaction.entity';
+import { AuditLog } from '../audit/entities/audit-log.entity';
 
 export const typeOrmConfig = (
   configService: ConfigService,
@@ -11,14 +12,20 @@ export const typeOrmConfig = (
   host: configService.get<string>('DB_HOST', 'localhost'),
   port: configService.get<number>('DB_PORT', 5432),
   username: configService.get<string>('DB_USERNAME', 'postgres'),
-  password: configService.get<string>('DB_PASSWORD', '1234'),
+  password: (() => {
+    const value = configService.get<string>('DB_PASSWORD');
+    if (!value || value.trim().length === 0) {
+      throw new Error('Missing required configuration: DB_PASSWORD');
+    }
+    return value;
+  })(),
   database: configService.get<string>('DB_NAME', 'finance_db'),
-  entities: [User, RefreshToken, Transaction],
+  entities: [User, RefreshToken, Transaction, AuditLog],
   synchronize: configService.get<string>('DB_SYNC', 'false') === 'true',
   logging: configService.get<string>('DB_LOGGING', 'false') === 'true',
   ssl:
     configService.get<string>('NODE_ENV') === 'production'
-      ? { rejectUnauthorized: false }
+      ? { rejectUnauthorized: true }
       : false,
   extra: {
     max: 20,

@@ -5,18 +5,20 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { QueryUsersDto } from './dto/query-users.dto';
 import { PaginatedResult, paginate } from '../common/dto/pagination.dto';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<User> {
@@ -31,15 +33,17 @@ export class UsersService {
       ...dto,
       email: dto.email.toLowerCase(),
     });
-    return this.usersRepo.save(user);
+    const saved = await this.usersRepo.save(user);
+    await this.auditService.log({
+      action: 'user.created',
+      entityType: 'user',
+      entityId: saved.id,
+      details: { role: saved.role, isActive: saved.isActive },
+    });
+    return saved;
   }
 
   async findAll(query: QueryUsersDto): Promise<PaginatedResult<User>> {
-    const where: FindOptionsWhere<User> = {};
-
-    if (query.role !== undefined) where.role = query.role;
-    if (query.isActive !== undefined) where.isActive = query.isActive;
-
     const qb = this.usersRepo.createQueryBuilder('user');
 
     if (query.search) {
@@ -67,15 +71,28 @@ export class UsersService {
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepo.findOne({
-      where: { email: email.toLowerCase() },
-    });
+    return this.usersRepo
+      .createQueryBuilder('user')
+      .addSelect('user.password')
+      .where('LOWER(user.email) = LOWER(:email)', { email })
+      .getOne();
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
+    const previous = { role: user.role, isActive: user.isActive };
     Object.assign(user, dto);
-    return this.usersRepo.save(user);
+    const saved = await this.usersRepo.save(user);
+    await this.auditService.log({
+      action: 'user.updated',
+      entityType: 'user',
+      entityId: saved.id,
+      details: {
+        before: previous,
+        after: { role: saved.role, isActive: saved.isActive },
+      },
+    });
+    return saved;
   }
 
   async remove(id: string, requesterId: string): Promise<void> {
@@ -84,6 +101,12 @@ export class UsersService {
     }
     const user = await this.findOne(id);
     await this.usersRepo.softDelete(user.id);
+    await this.auditService.log({
+      actorId: requesterId,
+      action: 'user.deleted',
+      entityType: 'user',
+      entityId: user.id,
+    });
   }
 
   async updateLastLogin(id: string): Promise<void> {

@@ -8,6 +8,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Role } from '../common/enums/role.enum';
+import { AuditService } from '../audit/audit.service';
 
 const mockUser: Partial<User> = {
   id: 'uuid-1',
@@ -40,6 +41,10 @@ const mockRepo = {
   createQueryBuilder: jest.fn().mockReturnValue(mockQb),
 };
 
+const mockAuditService = {
+  log: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('UsersService', () => {
   let service: UsersService;
 
@@ -48,12 +53,14 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: mockRepo },
+        { provide: AuditService, useValue: mockAuditService },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
     jest.clearAllMocks();
     mockRepo.createQueryBuilder.mockReturnValue(mockQb);
+    mockAuditService.log.mockResolvedValue(undefined);
   });
 
   it('should be defined', () => {

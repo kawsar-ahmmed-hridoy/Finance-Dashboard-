@@ -10,13 +10,13 @@ import {
 import { User } from '../../users/entities/user.entity';
 
 @Entity('refresh_tokens')
-@Index(['token'])
+@Index(['tokenHash'])
 export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'text', unique: true })
-  token: string;
+  tokenHash: string;
 
   @Column({ type: 'uuid' })
   userId: string;

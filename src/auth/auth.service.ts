@@ -7,13 +7,14 @@ import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
+import { createHash, randomUUID } from 'node:crypto';
 import { UsersService } from '../users/users.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
 import { RegisterDto, ChangePasswordDto } from './dto/auth.dto';
 import { Role } from '../common/enums/role.enum';
 import { JwtPayload } from './strategies/jwt.strategy';
+import { AuditService } from '../audit/audit.service';
 
 export interface TokenPair {
   accessToken: string;
@@ -32,6 +33,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly auditService: AuditService,
     @InjectRepository(RefreshToken)
     private readonly refreshTokenRepo: Repository<RefreshToken>,
   ) {}
@@ -49,6 +51,13 @@ export class AuthService {
   ): Promise<AuthResponse> {
     await this.usersService.updateLastLogin(user.id);
     const tokens = await this.generateTokenPair(user, meta);
+    await this.auditService.log({
+      actorId: user.id,
+      action: 'auth.login',
+      entityType: 'user',
+      entityId: user.id,
+      details: { ip: meta?.ip ?? null },
+    });
     return { user: this.sanitizeUser(user), tokens };
   }
 
@@ -58,6 +67,12 @@ export class AuthService {
       role: Role.VIEWER,
     });
     const tokens = await this.generateTokenPair(user);
+    await this.auditService.log({
+      actorId: user.id,
+      action: 'auth.register',
+      entityType: 'user',
+      entityId: user.id,
+    });
     return { user: this.sanitizeUser(user), tokens };
   }
 
@@ -65,8 +80,9 @@ export class AuthService {
     rawToken: string,
     meta?: { ip?: string; userAgent?: string },
   ): Promise<TokenPair> {
+    const tokenHash = this.hashToken(rawToken);
     const storedToken = await this.refreshTokenRepo.findOne({
-      where: { token: rawToken },
+      where: { tokenHash },
       relations: ['user'],
     });
 
@@ -79,20 +95,41 @@ export class AuthService {
 
     await this.refreshTokenRepo.update(storedToken.id, { isRevoked: true });
 
-    return this.generateTokenPair(storedToken.user, meta);
+    const tokens = await this.generateTokenPair(storedToken.user, meta);
+    await this.auditService.log({
+      actorId: storedToken.userId,
+      action: 'auth.token_refreshed',
+      entityType: 'user',
+      entityId: storedToken.userId,
+      details: { ip: meta?.ip ?? null },
+    });
+    return tokens;
   }
 
   async logout(userId: string, refreshToken?: string): Promise<void> {
     if (refreshToken) {
+      const tokenHash = this.hashToken(refreshToken);
       await this.refreshTokenRepo.update(
-        { token: refreshToken, userId },
+        { tokenHash, userId },
         { isRevoked: true },
       );
     }
+    await this.auditService.log({
+      actorId: userId,
+      action: 'auth.logout',
+      entityType: 'user',
+      entityId: userId,
+    });
   }
 
   async logoutAll(userId: string): Promise<void> {
     await this.revokeAllUserTokens(userId);
+    await this.auditService.log({
+      actorId: userId,
+      action: 'auth.logout_all',
+      entityType: 'user',
+      entityId: userId,
+    });
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
@@ -108,8 +145,13 @@ export class AuthService {
     }
     user.password = dto.newPassword;
     await this.usersService.update(userId, { ...user });
-    // Invalidate all sessions after password change
     await this.revokeAllUserTokens(userId);
+    await this.auditService.log({
+      actorId: userId,
+      action: 'auth.password_changed',
+      entityType: 'user',
+      entityId: userId,
+    });
   }
 
   private async generateTokenPair(
@@ -131,23 +173,23 @@ export class AuthService {
       '7d',
     );
 
-    const jwtSecret =
-      this.configService.get<string>('JWT_SECRET') || 'default-secret';
+    const jwtSecret = this.getRequiredConfig('JWT_SECRET');
     const signOptions: JwtSignOptions = {
       secret: jwtSecret,
       expiresIn: this.parseSeconds(jwtExpiresIn),
     };
     const [accessToken, rawRefreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, signOptions),
-      Promise.resolve(uuidv4()),
+      Promise.resolve(randomUUID()),
     ]);
+    const refreshTokenHash = this.hashToken(rawRefreshToken);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + this.parseDays(refreshExpiresIn));
 
     await this.refreshTokenRepo.save(
       this.refreshTokenRepo.create({
-        token: rawRefreshToken,
+        tokenHash: refreshTokenHash,
         userId: user.id,
         expiresAt,
         ipAddress: meta?.ip?.substring(0, 45) ?? null,
@@ -182,6 +224,7 @@ export class AuthService {
   }
 
   private sanitizeUser(user: User): Omit<User, 'password' | 'refreshTokens'> {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, refreshTokens, ...safe } = user as User & {
       password: string;
       refreshTokens: RefreshToken[];
@@ -199,5 +242,17 @@ export class AuthService {
     if (duration.endsWith('h')) return parseInt(duration) * 3600;
     if (duration.endsWith('d')) return parseInt(duration) * 86400;
     return 900;
+  }
+
+  private hashToken(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
+  }
+
+  private getRequiredConfig(key: string): string {
+    const value = this.configService.get<string>(key);
+    if (!value || value.trim().length === 0) {
+      throw new Error(`Missing required configuration: ${key}`);
+    }
+    return value;
   }
 }

@@ -17,19 +17,19 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const appName = configService.get<string>('APP_NAME', 'Finance API');
-  const corsOrigins = configService
-    .get<string>('CORS_ORIGINS', 'http://localhost:3001')
+  const corsOrigins = (configService.get<string>('CORS_ORIGINS') ?? '')
     .split(',')
-    .map((o) => o.trim());
+    .map((o) => o.trim())
+    .filter((o) => o.length > 0);
 
   app.use(helmet());
   app.use(compression());
 
   app.enableCors({
-    origin: corsOrigins,
+    origin: corsOrigins.length > 0 ? corsOrigins : false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+    credentials: corsOrigins.length > 0,
   });
 
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -51,7 +51,11 @@ async function bootstrap() {
     new ResponseInterceptor(),
   );
 
-  if (configService.get<string>('NODE_ENV') !== 'production') {
+  const swaggerEnabled =
+    configService.get<string>('SWAGGER_ENABLED') === 'true' ||
+    (configService.get<string>('NODE_ENV') ?? 'development') === 'development';
+
+  if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
       .setTitle(appName)
       .setDescription(
@@ -76,7 +80,9 @@ async function bootstrap() {
 
   await app.listen(port);
   console.log(`\n${appName} is running on: http://localhost:${port}/api`);
-  console.log(`Swagger docs at: http://localhost:${port}/api/docs\n`);
+  if (swaggerEnabled) {
+    console.log(`Swagger docs at: http://localhost:${port}/api/docs\n`);
+  }
 }
 
 void bootstrap();

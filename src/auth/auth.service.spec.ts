@@ -7,6 +7,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { Role } from '../common/enums/role.enum';
 import { User } from '../users/entities/user.entity';
+import { AuditService } from '../audit/audit.service';
 
 const mockUser: Partial<User> = {
   id: 'user-uuid-1',
@@ -54,6 +55,10 @@ const mockConfigService = {
   getOrThrow: jest.fn().mockReturnValue('test-secret'),
 };
 
+const mockAuditService = {
+  log: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
 
@@ -64,6 +69,7 @@ describe('AuthService', () => {
         { provide: UsersService, useValue: mockUsersService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: AuditService, useValue: mockAuditService },
         {
           provide: getRepositoryToken(RefreshToken),
           useValue: mockRefreshTokenRepo,
@@ -73,6 +79,7 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     jest.clearAllMocks();
+    mockAuditService.log.mockResolvedValue(undefined);
   });
 
   it('should be defined', () => {

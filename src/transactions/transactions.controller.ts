@@ -14,11 +14,14 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiProduces,
   ApiOperation,
   ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import express from 'express';
+import { Res } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
@@ -52,6 +55,26 @@ export class TransactionsController {
   })
   findAll(@Query() query: QueryTransactionsDto, @CurrentUser() user: User) {
     return this.transactionsService.findAll(query, user);
+  }
+
+  @Get('export/csv')
+  @ApiOperation({
+    summary: 'Export transactions as CSV with applied filters',
+  })
+  @ApiProduces('text/csv')
+  async exportCsv(
+    @Query() query: QueryTransactionsDto,
+    @CurrentUser() user: User,
+    @Res() res: express.Response,
+  ) {
+    const csv = await this.transactionsService.exportCsv(query, user);
+    const timestamp = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="transactions-${timestamp}.csv"`,
+    );
+    res.send(csv);
   }
 
   @Get(':id')

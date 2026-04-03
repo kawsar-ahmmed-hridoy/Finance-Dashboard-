@@ -20,15 +20,23 @@ import {
 
 dotenv.config();
 
+function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  if (!value || value.trim().length === 0) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}
+
 const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST ?? 'localhost',
   port: Number(process.env.DB_PORT ?? 5432),
   username: process.env.DB_USERNAME ?? 'postgres',
-  password: process.env.DB_PASSWORD ?? 'postgres',
+  password: getRequiredEnv('DB_PASSWORD'),
   database: process.env.DB_NAME ?? 'finance_db',
   entities: [User, Transaction, RefreshToken],
-  synchronize: true,
+  synchronize: process.env.DB_SYNC === 'true',
 });
 
 async function seed() {
@@ -43,21 +51,21 @@ async function seed() {
       firstName: 'Super',
       lastName: 'Admin',
       email: 'admin@finance.com',
-      password: 'Admin@1234',
+      password: getRequiredEnv('SEED_ADMIN_PASSWORD'),
       role: Role.ADMIN,
     },
     {
       firstName: 'Kawsar',
       lastName: 'Ahmmed',
       email: 'analyst@finance.com',
-      password: 'Analyst@1234',
+      password: getRequiredEnv('SEED_ANALYST_PASSWORD'),
       role: Role.ANALYST,
     },
     {
       firstName: 'Hridoy',
       lastName: 'Viewer',
       email: 'viewer@finance.com',
-      password: 'Viewer@1234',
+      password: getRequiredEnv('SEED_VIEWER_PASSWORD'),
       role: Role.VIEWER,
     },
   ];
@@ -93,10 +101,6 @@ async function seed() {
 
   await dataSource.destroy();
   console.log('\nSeed complete!\n');
-  console.log('Default credentials:');
-  console.log('  Admin    → admin@finance.com   / Admin@1234');
-  console.log('  Analyst  → analyst@finance.com / Analyst@1234');
-  console.log('  Viewer   → viewer@finance.com  / Viewer@1234');
 }
 
 function generateSampleTransactions(adminId: string, analystId: string) {
