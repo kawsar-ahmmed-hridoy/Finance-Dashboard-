@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
+  IsUUID,
   Matches,
   MaxLength,
   MinLength,
@@ -12,11 +13,13 @@ export class LoginDto {
   @ApiProperty({ example: 'admin@finance.com' })
   @IsEmail()
   @IsNotEmpty()
+  @MaxLength(255)
   email: string;
 
   @ApiProperty({ example: 'P@ssw0rd!' })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(72)
   password: string;
 }
 
@@ -53,6 +56,7 @@ export class RegisterDto {
 
 export class RefreshTokenDto {
   @ApiProperty({ description: 'Valid refresh token' })
+  @IsUUID()
   @IsString()
   @IsNotEmpty()
   refreshToken: string;

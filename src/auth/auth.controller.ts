@@ -10,8 +10,8 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiNoContentResponse,
   ApiOperation,
-  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -37,8 +37,6 @@ export class AuthController {
   @Public()
   @Throttle({ short: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Register a new user (self-service, Viewer role)' })
-  @ApiResponse({ status: 201, description: 'Registration successful' })
-  @ApiResponse({ status: 409, description: 'Email already in use' })
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
@@ -49,11 +47,6 @@ export class AuthController {
   @Throttle({ short: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Login with email & password' })
   @ApiBody({ type: LoginDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Login successful, returns JWT tokens',
-  })
-  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @UseGuards(AuthGuard('local'))
   login(@Req() req: express.Request & { user: User }) {
     const ip = req.ip ?? req.socket.remoteAddress ?? undefined;
@@ -66,8 +59,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ short: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
-  @ApiResponse({ status: 200, description: 'New token pair issued' })
-  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   refresh(@Body() dto: RefreshTokenDto, @Req() req: express.Request) {
     const ip = req.ip ?? undefined;
     const userAgent = req.get('user-agent') ?? undefined;
@@ -78,6 +69,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Logout (revoke current refresh token)' })
+  @ApiNoContentResponse({ description: 'Logout successful' })
   logout(
     @CurrentUser('id') userId: string,
     @Body() dto: Partial<RefreshTokenDto>,
@@ -91,6 +83,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Logout from all devices (revoke all refresh tokens)',
   })
+  @ApiNoContentResponse({ description: 'Logout successful' })
   logoutAll(@CurrentUser('id') userId: string) {
     return this.authService.logoutAll(userId);
   }
@@ -99,6 +92,7 @@ export class AuthController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Change own password (invalidates all sessions)' })
+  @ApiNoContentResponse({ description: 'Password changed successfully' })
   changePassword(
     @CurrentUser('id') userId: string,
     @Body() dto: ChangePasswordDto,

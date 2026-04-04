@@ -195,7 +195,6 @@ export class DashboardService {
         count: string;
       }>();
 
-    // Compute totals by type for percentage calculation
     const typeTotals: Record<string, number> = {};
     for (const row of rows) {
       typeTotals[row.type] =
@@ -270,7 +269,6 @@ export class DashboardService {
       count: string;
     }>();
 
-    // Group by period
     const periodMap = new Map<string, TrendDataPoint>();
     for (const row of rows) {
       const key = row.period.toISOString().split('T')[0];

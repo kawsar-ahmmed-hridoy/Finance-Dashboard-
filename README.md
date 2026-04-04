@@ -95,7 +95,7 @@ src/
 - Recent activity feed
 
 ### Developer Experience
-- **Swagger UI** at `/api/docs` (enabled in local development or when `SWAGGER_ENABLED=true`)
+- **Swagger UI** at `/api/docs` (disabled by default; enable only in local development with `SWAGGER_ENABLED=true`)
 - Consistent `{ success, data, timestamp }` response envelope
 - Structured error responses with path + timestamp
 - `/api/v1/health` endpoint with DB connectivity check
@@ -241,7 +241,7 @@ npm run build && npm run start:prod
 ```
 
 The API will be live at `http://localhost:3000/api`  
-Swagger docs at `http://localhost:3000/api/docs`
+Swagger docs are available at `http://localhost:3000/api/docs` only when `NODE_ENV=development` and `SWAGGER_ENABLED=true`.
 
 ---
 
@@ -264,8 +264,9 @@ Swagger docs at `http://localhost:3000/api/docs`
 | `JWT_REFRESH_EXPIRES_IN`| Refresh token lifetime                    | `7d`              |
 | `THROTTLE_TTL`          | Rate limit window in milliseconds         | `60000`           |
 | `THROTTLE_LIMIT`        | Max requests per window                   | `100`             |
-| `CORS_ORIGINS`          | Comma-separated allowed origins           | `localhost:3001`  |
-| `SWAGGER_ENABLED`       | Force Swagger outside local development   | `false`           |
+| `CORS_ORIGINS`          | Comma-separated allowed origins           | `http://localhost:3001`  |
+| `TRUST_PROXY`           | Trust reverse proxy headers (`X-Forwarded-*`) | `false`     |
+| `SWAGGER_ENABLED`       | Enable Swagger in development mode only   | `false`           |
 | `SEED_ADMIN_PASSWORD`   | Seed script password for admin account    | required for seed |
 | `SEED_ANALYST_PASSWORD` | Seed script password for analyst account  | required for seed |
 | `SEED_VIEWER_PASSWORD`  | Seed script password for viewer account   | required for seed |
@@ -395,7 +396,7 @@ npm run test:cov
 ## 🌱 Database Seeding
 
 ```bash
-npx ts-node -r tsconfig-paths/register src/database/seeds/seed.ts
+npm run seed
 ```
 
 Creates the following accounts and 6 months of sample transactions:

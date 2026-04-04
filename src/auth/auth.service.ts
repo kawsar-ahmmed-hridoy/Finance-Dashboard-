@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { createHash, randomUUID } from 'node:crypto';
+import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { User } from '../users/entities/user.entity';
@@ -29,6 +30,9 @@ export interface AuthResponse {
 
 @Injectable()
 export class AuthService {
+  private static readonly DUMMY_BCRYPT_HASH =
+    '$2b$10$KYVbZ5JFVfqu0oV98LnF5eTk4QTe2e4PQG7QNYfhumEpGdi/867AO';
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -39,8 +43,12 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await this.usersService.findByEmail(email);
-    if (!user || !user.isActive) return null;
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await this.usersService.findByEmail(normalizedEmail);
+    if (!user || !user.isActive) {
+      await bcrypt.compare(password, AuthService.DUMMY_BCRYPT_HASH);
+      return null;
+    }
     const isMatch = await user.comparePassword(password);
     return isMatch ? user : null;
   }
@@ -233,14 +241,31 @@ export class AuthService {
   }
 
   private parseDays(duration: string): number {
-    const match = duration.match(/^(\d+)d$/);
-    return match ? parseInt(match[1], 10) : 7;
+    const normalized = duration.trim().toLowerCase();
+    const dayMatch = normalized.match(/^(\d+)d$/);
+    if (dayMatch) return parseInt(dayMatch[1], 10);
+
+    const seconds = this.parseSeconds(duration);
+    return Math.max(1, Math.floor(seconds / 86400));
   }
 
   private parseSeconds(duration: string): number {
-    if (duration.endsWith('m')) return parseInt(duration) * 60;
-    if (duration.endsWith('h')) return parseInt(duration) * 3600;
-    if (duration.endsWith('d')) return parseInt(duration) * 86400;
+    const normalized = duration.trim().toLowerCase();
+    const match = normalized.match(/^(\d+)([smhd])$/);
+    if (match) {
+      const value = parseInt(match[1], 10);
+      const unit = match[2];
+      if (unit === 's') return value;
+      if (unit === 'm') return value * 60;
+      if (unit === 'h') return value * 3600;
+      if (unit === 'd') return value * 86400;
+    }
+
+    const asNumber = Number(normalized);
+    if (Number.isFinite(asNumber) && asNumber > 0) {
+      return Math.floor(asNumber);
+    }
+
     return 900;
   }
 

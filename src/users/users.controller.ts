@@ -13,9 +13,9 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiNoContentResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
@@ -36,8 +36,6 @@ export class UsersController {
   @Post()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Create a new user [Admin]' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 409, description: 'Email already exists' })
   create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
@@ -90,6 +88,7 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete a user [Admin]' })
   @ApiParam({ name: 'id', description: 'User UUID' })
+  @ApiNoContentResponse({ description: 'User deleted successfully' })
   remove(
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser('id') requesterId: string,

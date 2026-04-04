@@ -6,7 +6,6 @@
 
 import 'reflect-metadata';
 import { DataSource } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
 import { User } from '../../users/entities/user.entity';
 import { Transaction } from '../../transactions/entities/transaction.entity';
@@ -80,7 +79,7 @@ async function seed() {
     }
     const user = userRepo.create({
       ...u,
-      password: await bcrypt.hash(u.password, 12),
+      password: u.password,
     });
     const saved = await userRepo.save(user);
     savedUsers.push(saved);

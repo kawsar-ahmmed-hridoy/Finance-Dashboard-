@@ -31,8 +31,7 @@ export class AuditService {
       });
 
       await this.auditRepo.save(entry);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       this.logger.warn(
         `Failed to persist audit log for action "${input.action}"`,
       );

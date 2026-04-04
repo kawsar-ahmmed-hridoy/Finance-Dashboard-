@@ -15,9 +15,9 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiProduces,
+  ApiNoContentResponse,
   ApiOperation,
   ApiParam,
-  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import express from 'express';
@@ -43,7 +43,6 @@ export class TransactionsController {
     summary: 'Create a new transaction [Analyst, Admin]',
     description: 'Viewers cannot create transactions.',
   })
-  @ApiResponse({ status: 201, description: 'Transaction created' })
   create(@Body() dto: CreateTransactionDto, @CurrentUser() user: User) {
     return this.transactionsService.create(dto, user);
   }
@@ -120,6 +119,7 @@ export class TransactionsController {
     summary: 'Soft-delete a transaction [Analyst (own), Admin (any)]',
   })
   @ApiParam({ name: 'id', description: 'Transaction UUID' })
+  @ApiNoContentResponse({ description: 'Transaction deleted successfully' })
   remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: User) {
     return this.transactionsService.remove(id, user);
   }

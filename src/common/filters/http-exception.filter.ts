@@ -28,6 +28,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | string[] = 'Internal server error';
     let error = 'Internal Server Error';
+    const isProduction = process.env.NODE_ENV === 'production';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -42,8 +43,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
         error = exception.name;
       }
     } else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name;
+      if (!isProduction) {
+        message = exception.message;
+        error = exception.name;
+      }
       this.logger.error(
         `Unhandled exception: ${exception.message}`,
         exception.stack,

@@ -40,7 +40,6 @@ import { throttlerConfig } from './config/throttler.config';
     DashboardModule,
     AuditModule,
   ],
-  // Applied global guards
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },

@@ -4,32 +4,61 @@ import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
+import { json, urlencoded } from 'express';
+import type { Application } from 'express';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
+  const isProduction = (process.env.NODE_ENV ?? 'development') === 'production';
   const app = await NestFactory.create(AppModule, {
-    logger: ['error', 'warn', 'log', 'debug'],
+    logger: isProduction
+      ? ['error', 'warn', 'log']
+      : ['error', 'warn', 'log', 'debug'],
   });
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT', 3000);
   const appName = configService.get<string>('APP_NAME', 'Finance API');
+  const isDevelopment =
+    (configService.get<string>('NODE_ENV') ?? 'development') === 'development';
+  const swaggerEnabled =
+    isDevelopment && configService.get<string>('SWAGGER_ENABLED') === 'true';
   const corsOrigins = (configService.get<string>('CORS_ORIGINS') ?? '')
     .split(',')
     .map((o) => o.trim())
     .filter((o) => o.length > 0);
 
-  app.use(helmet());
+  const expressApp = app
+    .getHttpAdapter()
+    .getInstance() as unknown as Application;
+  expressApp.set(
+    'trust proxy',
+    configService.get<string>('TRUST_PROXY', 'false') === 'true',
+  );
+
+  expressApp.set('query parser', 'simple');
+  expressApp.disable('x-powered-by');
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: swaggerEnabled ? false : undefined,
+      hsts: isProduction,
+    }),
+  );
   app.use(compression());
+  app.use(json({ limit: '100kb' }));
+  app.use(urlencoded({ extended: false, limit: '100kb' }));
 
   app.enableCors({
     origin: corsOrigins.length > 0 ? corsOrigins : false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: corsOrigins.length > 0,
+    maxAge: 86400,
+    optionsSuccessStatus: 204,
   });
 
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
@@ -40,6 +69,7 @@ async function bootstrap() {
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
     }),
@@ -50,10 +80,6 @@ async function bootstrap() {
     new LoggingInterceptor(),
     new ResponseInterceptor(),
   );
-
-  const swaggerEnabled =
-    configService.get<string>('SWAGGER_ENABLED') === 'true' ||
-    (configService.get<string>('NODE_ENV') ?? 'development') === 'development';
 
   if (swaggerEnabled) {
     const swaggerConfig = new DocumentBuilder()
@@ -72,7 +98,9 @@ async function bootstrap() {
       .addTag('Dashboard', 'Summary analytics & insights')
       .build();
 
-    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    const document = SwaggerModule.createDocument(app, swaggerConfig, {
+      deepScanRoutes: true,
+    });
     SwaggerModule.setup('api/docs', app, document, {
       swaggerOptions: { persistAuthorization: true },
     });
